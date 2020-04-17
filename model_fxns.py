@@ -1,6 +1,4 @@
 import pandas as pd # data frame library
-
-import time # library for time functionality
 import datetime # library for date-time functionality
 
 import numpy as np # numerical python
@@ -64,15 +62,12 @@ def get_logistic(obs_x, obs_y, ForecastDays):
                 try:
                     obs_y[i] = obs_y[i-1]
                 except:
-                    pass
-        # if the minimum y value is still less than zero
-        # then use the polynomial model
-        if np.min(forecasted_y) < 0:
-            forecasted_y, forecasted_x, pred_y = get_polynomial(obs_x, obs_y, ForecastDays)
+                    obs_y[i] = 0
+                    
     except:
         # if the logistic model totally fails to fit
         # then use the polynomial model
-        forecasted_y, forecasted_x, pred_y = get_polynomial(obs_x, obs_y, ForecastDays)
+        forecasted_y, forecasted_x, pred_y, params = get_polynomial(obs_x, obs_y, ForecastDays, 3)
     
     # return the forecasted x-y values and predicted y values
     params = []
@@ -118,7 +113,7 @@ def get_exponential(obs_x, obs_y, ForecastDays):
         
 
 
-def get_polynomial(obs_x, obs_y, ForecastDays):
+def get_polynomial(obs_x, obs_y, ForecastDays, degree=2):
     # obs_x: observed x values
     # obs_y: observd y values
     # ForecastDays: number of days ahead to extend prediction
@@ -142,7 +137,7 @@ def get_polynomial(obs_x, obs_y, ForecastDays):
     try:
         # attempt to fit the polynomial model to the observed data
         # z: best-fit model parameter values
-        z = np.polyfit(obs_x, obs_y, 2)
+        z = np.polyfit(obs_x, obs_y, degree)
         # p: one-dimensional polynomial class; constructs the polynomial
         p = np.poly1d(z)
         # get predicted y values
@@ -195,10 +190,16 @@ def fit_curve(obs_x, obs_y, model, ForecastDays, N, ArrivalDate, day, iterations
     if model == 'logistic':
         forecasted_y, forecasted_x, pred_y, params = get_logistic(obs_x, obs_y, ForecastDays)
         obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
+    
     elif model == 'exponential':
         forecasted_y, forecasted_x, pred_y, params = get_exponential(obs_x, obs_y, ForecastDays)
         obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
-    elif model == 'polynomial':
+    
+    elif model == '3rd degree polynomial':
+        forecasted_y, forecasted_x, pred_y, params = get_polynomial(obs_x, obs_y, ForecastDays, 3)
+        obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
+    
+    elif model == 'quadratic':
         forecasted_y, forecasted_x, pred_y, params = get_polynomial(obs_x, obs_y, ForecastDays)
         obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
         
