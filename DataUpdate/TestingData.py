@@ -122,7 +122,9 @@ except:
 
 print(main_df['date'])
 
-df_today = main_df[main_df['date'] == '05/06/20'].copy()
+
+df_today = main_df[main_df['date'] == '05/08/20'].copy()
+
 
 df_today['log_PopSize'] = np.log10(df_today['PopSize'])
 df_today['log_People_Tested'] = np.log10(df_today['People_Tested'])
