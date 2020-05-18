@@ -202,4 +202,4 @@ for focal_loc in locations:
         print('\n')
 
 
-model_fits_df.to_pickle('model_results_dataframe.pkl')
+model_fits_df.to_pickle('data/model_results_dataframe.pkl')
