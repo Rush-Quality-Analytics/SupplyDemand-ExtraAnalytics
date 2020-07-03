@@ -87,7 +87,7 @@ else:
             # declare x as a list of integers from 0 to len(y)
             x = list(range(len(obs_y_trunc)))
              
-            iterations = 100000
+            iterations = 200000
             SEIR_fit = 0
             
             
