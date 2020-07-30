@@ -20,8 +20,11 @@ states_df = pd.read_csv('data/StatePops.csv', sep=',')
 states_df = states_df.loc[~states_df['Province/State'].isin(exclude)]
 
 fits_df = pd.read_pickle('data/model_results_dataframe.pkl')
+
+
 fits_df = fits_df[fits_df['model'] == 'Quadratic'] 
 fits_df = fits_df[fits_df['label'] == 'Current forecast']
+
 
 AA_df = pd.read_csv('data/African_American.csv', sep=',')
 AA_df = AA_df.loc[~AA_df['State'].isin(exclude)]
@@ -51,7 +54,6 @@ Atlantic_df['UniqueRow'] = Atlantic_df['formatted_dates'] + '-' + Atlantic_df['s
 
 pop_sizes = []
 colors = []
-quadratic_r2s = []
 AA_pop_tot = []
 AA_pop_per = []
 per_poor = []
@@ -61,9 +63,7 @@ for i, state in enumerate(states):
     
     df_sub = df0[df0['Province_State'] == state]
     testing_rate = df_sub['Testing_Rate'].tolist()
-    #dates = df_sub['date'].tolist()
-    #print(dates)
-    #sys.exit()
+    
     x = list(range(len(testing_rate)))
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, testing_rate)
     delta_testing_rate.append(slope)
@@ -76,8 +76,6 @@ for i, state in enumerate(states):
     pop_size = states_df[states_df['Province/State'] == state].PopSize.iloc[0]
     pop_sizes.append(pop_size)
     
-    r2 = fits_df[fits_df['focal_loc'] == state]['obs_pred_r2'].iloc[0]
-    quadratic_r2s.append(r2)
     
     black_pop = AA_df[AA_df['State'] == state]['BlackTotal'].iloc[0]
     AA_pop_tot.append(black_pop)
@@ -96,7 +94,6 @@ for i, state in enumerate(states):
     
 df0['PopSize'] = pop_sizes
 df0['color'] = colors
-df0['quadratic'] = quadratic_r2s
 df0['BlackTotal'] = AA_pop_tot
 df0['%Black'] = AA_pop_per
 df0['%Poor'] = per_poor

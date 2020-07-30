@@ -9,6 +9,9 @@ import numpy as np
 import datetime 
 import sys
 
+from os.path import expanduser
+mydir = expanduser("~/GitHub/SupplyDemand-ExtraAnalytics/ForManuscript/")
+
 
 
 def hulls(x, y, clim):
@@ -59,11 +62,12 @@ def fig_fxn(fig, model, fits_df, locations, max_len, n, dates, clr):
         except:
             continue
         
-    for clim in [90, 75, 55]:
+    for clim in [97.5, 87.5, 67.5]:
+        # 95, 75, 65 % CI intervals
         
         xran, pct_low, pct_hi, pct50 = hulls(X, Y, clim)
-        print(len(dates), len(xran), len(pct_low), len(pct_hi))
-        x = np.array(xran) + 7
+        #print(len(dates), len(xran), len(pct_low), len(pct_hi))
+        x = np.array(xran) + (141 - len(xran))
         plt.fill_between(x, pct_low, pct_hi, facecolor= clr, alpha=0.4, lw=0.2)
         
     plt.xlabel('Days since 3/10', fontweight='bold', fontsize=10)
@@ -84,10 +88,26 @@ def fig_fxn(fig, model, fits_df, locations, max_len, n, dates, clr):
         
     plt.tick_params(axis='both', labelsize=7, rotation=0)
     
-    plt.xlim(6, 50)
-    if model != 'Exponential':
-        plt.ylim(0.9, 1.)
+    if model == 'Exponential':
+        plt.ylim(0., 1.001)
+        
+    elif model == 'Logistic':
+        plt.ylim(0.8, 1.0)
+        
+    elif model == 'Quadratic':
+        plt.ylim(0.8, 1.0)
+        
+    elif model == 'Gaussian':
+        plt.ylim(0.8, 1.0)
     
+    elif model == 'SEIR-SD':
+        plt.ylim(0.8, 1.0)
+    
+    elif model in ['2 phase sine-logistic', '2 phase logistic']:
+        plt.ylim(0.98, 1.0)
+
+    
+    plt.xlim(0, 141)
     return fig, pct50
     
     
@@ -110,11 +130,11 @@ model_fits_df = pd.read_pickle('data/model_results_dataframe.pkl')
 
 fig = plt.figure(figsize=(10, 10))
 
-#models = list(set(model_fits_df['model']))
+models = list(set(model_fits_df['model']))
 models = ['Exponential', 'Logistic', 'Quadratic', 
-          'Gaussian', 'SEIR-SD']
+          'Gaussian', 'SEIR-SD', '2 phase sine-logistic', '2 phase logistic']
 
-model_clrs = ['r', 'orange', 'green', 'b', 'purple']
+model_clrs = ['r', 'orange', 'green', 'b', 'purple', 'm', 'c']
 
 avgR2s = []
 #print(models)
@@ -126,22 +146,30 @@ locations.sort()
 
     
 
-ns = [1,2,4,5,7]
+ns = [1,2,3,4,5,6,7]
 for i, model in enumerate(models):
     max_len = 0
     dates = []
 
     for loc in locations:
+        #print(model, loc)
         df = model_fits_df[model_fits_df['focal_loc'] == loc]
         df = df[df['model'] == model]
         r2s = df['obs_pred_r2']
-        d = df['pred_dates'].values[-1]
         
-        d = d[6:]
         
-        if len(r2s) > max_len:
-            max_len = len(r2s)
-            dates = d
+        try:
+            d = df['pred_dates'].values[-1]
+            
+            #print(model, loc, len(d), len(r2s))
+            
+            #d = d[6:]
+            
+            if len(r2s) > max_len:
+                max_len = len(r2s)
+                dates = d
+        except:
+            continue
     
     #print(max_len, len(dates))
     
@@ -153,21 +181,35 @@ for i, model in enumerate(models):
 
 fig.add_subplot(3, 3, 8)
 
-x = np.array(list(range(len(avgR2s[0])))) + 7
-
 for i, model in enumerate(models):
-    if i == 0:
-        continue
+    #if i == 0: continue
     
-    plt.plot(x, avgR2s[i], c=model_clrs[i], linewidth=2, alpha=0.6, label=model)
+    l = avgR2s[i]
+    x = np.array(list(range(len(l)))) + 7
+    
+    r2s = []
+    for j in l:
+        if j > 0:
+            r2s.append(j)
+    
+        elif j == float('Nan') or j == 'nan' or j == np.nan:
+            r2s.append(0)
+            
+        else:
+            r2s.append(0)
+        
+    
+    #print(model, ' ', r2s)
+    plt.plot(x, r2s, c=model_clrs[i], linewidth=2, alpha=0.6, label=model)
     
 
-plt.ylim(0.95, 1.0)
+plt.ylim(0.93, 1.0)
 plt.tick_params(axis='both', labelsize=7, rotation=0)
 plt.xlabel('Days since 3/10', fontweight='bold', fontsize=10)
 plt.ylabel(r'$r^{2}$', fontweight='bold', fontsize=12)
-plt.legend(fontsize=10)
+plt.title('Average performance' , fontweight='bold', fontsize=12)
+plt.legend(fontsize=12, bbox_to_anchor=(1.1, 1), loc='upper left', frameon=False)
 
 plt.subplots_adjust(wspace=0.35, hspace=0.4)
-plt.savefig('figures/Model_Performance.png', dpi=400, bbox_inches = "tight")
+plt.savefig(mydir + 'figures/Model_Performance.png', dpi=400, bbox_inches = "tight")
 plt.close()
