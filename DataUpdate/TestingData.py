@@ -19,12 +19,6 @@ JH_dates = df0['date'].tolist()
 states_df = pd.read_csv('data/StatePops.csv', sep=',')
 states_df = states_df.loc[~states_df['Province/State'].isin(exclude)]
 
-fits_df = pd.read_pickle('data/model_results_dataframe.pkl')
-
-
-fits_df = fits_df[fits_df['model'] == 'Quadratic'] 
-fits_df = fits_df[fits_df['label'] == 'Current forecast']
-
 
 AA_df = pd.read_csv('data/African_American.csv', sep=',')
 AA_df = AA_df.loc[~AA_df['State'].isin(exclude)]
