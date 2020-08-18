@@ -3,6 +3,7 @@ import datetime
 import sys 
 import numpy as np
 from scipy import stats
+import requests
 
 pd.set_option('display.max_columns', None)
 
@@ -19,12 +20,6 @@ JH_dates = df0['date'].tolist()
 states_df = pd.read_csv('data/StatePops.csv', sep=',')
 states_df = states_df.loc[~states_df['Province/State'].isin(exclude)]
 
-fits_df = pd.read_pickle('data/model_results_dataframe.pkl')
-
-
-fits_df = fits_df[fits_df['model'] == 'Quadratic'] 
-fits_df = fits_df[fits_df['label'] == 'Current forecast']
-
 
 AA_df = pd.read_csv('data/African_American.csv', sep=',')
 AA_df = AA_df.loc[~AA_df['State'].isin(exclude)]
@@ -34,7 +29,19 @@ Poverty_df = Poverty_df.loc[~Poverty_df['State'].isin(exclude)]
 
 
 exclude_abbv = ['AS', 'VI', 'MP', 'GU', 'PR']
-Atlantic_df = pd.read_csv('https://raw.githubusercontent.com/COVID19Tracking/covid-tracking-data/master/data/states_daily_4pm_et.csv', sep=',')
+#Atlantic_df = pd.read_csv('https://raw.githubusercontent.com/COVID19Tracking/covid-tracking-data/master/data/states_daily_4pm_et.csv', sep=',')
+Atlantic_df = requests.get('https://api.covidtracking.com/v1/states/daily.csv')
+
+f = open('data/Atlantic_df.csv', "w")
+f.write(Atlantic_df.text)
+f.close()
+
+Atlantic_df = pd.read_csv('data/Atlantic_df.csv', sep=',')
+
+#print(Atlantic_df.head())      
+#sys.exit()
+
+
 Atlantic_df.drop(['hash', 'dateChecked', 'fips', 'posNeg'], axis=1, inplace=True)
 Atlantic_df = Atlantic_df.loc[~Atlantic_df['state'].isin(exclude_abbv)]
 state_abvs = Atlantic_df['state'].tolist()
@@ -117,10 +124,10 @@ except:
     pass
 
 
-print(main_df['date'])
+dates = main_df['date'].tolist()
 
 
-df_today = main_df[main_df['date'] == '05/08/20'].copy()
+df_today = main_df[main_df['date'] == dates[-1]].copy()
 
 
 df_today['log_PopSize'] = np.log10(df_today['PopSize'])
@@ -133,7 +140,7 @@ df_today['log_hospitalizedCurrently'] = np.log10(df_today['hospitalizedCurrently
 df_today['log_inIcuCurrently'] = np.log10(df_today['inIcuCurrently'])
 df_today['log_onVentilatorCurrently'] = np.log10(df_today['onVentilatorCurrently'])
 
-df_today.to_excel("data/Testing_DataFrame.xlsx")
+#df_today.to_excel("data/Testing_DataFrame.xlsx")
 main_df.to_pickle('data/Testing_Dataframe.pkl')
 df_today.to_pickle('data/Testing_Dataframe_Most_Recent_Day.pkl')
 

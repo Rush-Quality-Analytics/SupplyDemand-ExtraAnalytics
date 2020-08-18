@@ -1,5 +1,5 @@
 import pandas as pd
-#import sys
+import sys
 import numpy as np
 import datetime 
 
@@ -8,53 +8,45 @@ import model_fxns as fxns
 
 
 # IMPORT DATA
-seir_fits_df = pd.read_csv('data/SEIR-SD_States_Update.txt', sep='\t')
 StatePops = pd.read_csv('data/StatePops.csv')
     
 cases_df = pd.read_csv('data/COVID-CASES-DF.txt', sep='\t') 
 cases_df = cases_df[cases_df['Country/Region'] == 'US']
-cases_df = cases_df[cases_df['Province/State'] != 'US']
-cases_df = cases_df[cases_df['Province/State'] != 'American Samoa']
-cases_df = cases_df[cases_df['Province/State'] != 'Northern Mariana Islands']
-cases_df = cases_df[cases_df['Province/State'] != 'Wuhan Evacuee']
-cases_df = cases_df[cases_df['Province/State'] != 'Virgin Islands, U.S.']
 
-    
+cases_df = cases_df[~cases_df['Province/State'].isin(['US', 'American Samoa', 
+                                        'Northern Mariana Islands', 'Diamond Princess', 
+                                        'Grand Princess', 'Recovered', 
+                                        'United States Virgin Islands', 
+                                        'Virgin Islands, U.S.',
+                                        'Wuhan Evacuee'])]
+
+
 cases_df.drop(columns=['Unnamed: 0'], inplace=True)
     
 
 models = ['SEIR-SD', '2 phase sine-logistic', '2 phase logistic',
           'Logistic', 'Exponential', 'Quadratic', 'Gaussian']
 
-
 locations = list(set(cases_df['Province/State']))
 locations.sort()
-
-ForecastDays_O = 60
-
             
-col_names =  ['obs_y', 'pred_y', 'forecasted_y', 'pred_dates', 'forecast_dates', 'label', 'obs_pred_r2', 'model', 
-                          'focal_loc', 'PopSize', 'ArrivalDate']
+col_names =  ['pred_dates', 'obs_pred_r2', 'model', 'focal_loc']
             
 model_fits_df  = pd.DataFrame(columns = col_names)
     
-            
-    
 for focal_loc in locations:
-    print(focal_loc)
-   
+    
     try:
         PopSize = StatePops[StatePops['Province/State'] == focal_loc]['PopSize'].tolist()    
         PopSize = PopSize[0]
         ArrivalDate = StatePops[StatePops['Province/State'] == focal_loc]['Date_of_first_reported_infection'].tolist()
         ArrivalDate = ArrivalDate[0]
-        SEIR_Fit = seir_fits_df[seir_fits_df['focal_loc'] == focal_loc]
+
  
     except:
         continue
         
     for model in models:
-        print(model)
             
         new_cases = []
                     
@@ -65,7 +57,6 @@ for focal_loc in locations:
             # obs_y: observed y values
             # model: the model to fit
             # T0: likely date of first infection
-            # ForecastDays: number of days ahead to extend predictions
             # N: population size of interest
             # ArrivalDate: likely data of first infection (used by SEIR-SD model)
             # incubation_period: disease-specific epidemilogical parameter
@@ -81,11 +72,6 @@ for focal_loc in locations:
                     
             # declare the following as global variables so their changes can be 
             # seen/used by outside functions
-                    
-                
-        # add 1 to number of forecast days for indexing purposes
-        ForecastDays = int(ForecastDays_O+1)
-                    
                     
         # filter main dataframe to include only the chosen location
         df_sub = cases_df[cases_df['Province/State'] == focal_loc]
@@ -103,7 +89,7 @@ for focal_loc in locations:
         obs_y = obs_y[i:]
         
         
-        for i, j in enumerate(list(range(-150, 0))):
+        for i, j in enumerate(list(range(-170, 0))):
             
             try:
                         
@@ -111,6 +97,7 @@ for focal_loc in locations:
                     # get dates for today's predictions/forecast
                     DATES = yi[4:]
                     obs_y_trunc = df_sub.iloc[0,4:].values
+                
                 else:
                     # get dates for previous days predictions/forecast
                     DATES = yi[4:j]
@@ -120,11 +107,15 @@ for focal_loc in locations:
                 # remove leading zeros from observed y values 
                 # and coordinate it with dates
                 ii = 0
-                while obs_y_trunc[ii] == 0: ii+=1
+                while obs_y_trunc[ii] == 0: 
+                    ii+=1
+                    
                 y = obs_y_trunc[ii:]
                 dates = DATES[ii:]
-                            
-                    
+                
+                latest_date = pd.to_datetime(dates[-1])
+                first_date = pd.to_datetime(dates[0])
+                
                 # declare x as a list of integers from 0 to len(y)
                 x = list(range(len(y)))
                 
@@ -132,10 +123,10 @@ for focal_loc in locations:
                 #    r-square for observed vs. predicted
                 #    predicted y-values
                 #    forecasted x and y values
-                iterations = 100000
-                SEIR_Fit = 0
+                iterations = 200000
+                ForecastDays = 0
                 obs_pred_r2, obs_x, pred_y, forecasted_x, forecasted_y, params = fxns.fit_curve(x, y, 
-                                    model, ForecastDays, PopSize, ArrivalDate, j, iterations, SEIR_Fit)
+                                    model, ForecastDays, PopSize, ArrivalDate, j, iterations)
                             
                 # convert y values to numpy array
                 y = np.array(y)
@@ -154,52 +145,15 @@ for focal_loc in locations:
                 pred_y = np.array(pred_y)
                 pred_y[pred_y < 0] = 0
             
-                forecasted_y = np.array(forecasted_y)
-                forecasted_y[forecasted_y < 0] = 0
-                    
-                # number of from ArrivalDate to end of forecast window
-                #numdays = len(forecasted_x)
-                latest_date = pd.to_datetime(dates[-1])
-                first_date = pd.to_datetime(dates[0])
-            
-                # get the date of the last day in the forecast window
-                future_date = latest_date + datetime.timedelta(days = ForecastDays-1)
-                    
-                # get all dates from ArrivalDate to the last day in the forecast window
-                fdates = pd.date_range(start=first_date, end=future_date)
-                fdates = fdates.strftime('%m/%d')
-                    
-                # designature plot label for legend
-                if j == 0:
-                    label='Current forecast'
-                        
-                else:
-                    label = str(-j)+' day old forecast'
-                        
-                        
-                if label == 'Current forecast':
-                    for i, val in enumerate(forecasted_y):
-                        if i > 0:
-                            if forecasted_y[i] - forecasted_y[i-1] > 0:
-                                new_cases.append(forecasted_y[i] - forecasted_y[i-1])
-                            else:
-                                new_cases.append(0)
-                        if i == 0:
-                            new_cases.append(forecasted_y[i])
-                                
-                            
                 # get dates from ArrivalDate to the current day
                 dates = pd.date_range(start=first_date, end=latest_date)
                 dates = dates.strftime('%m/%d')
                     
-                    
-                output_list = [y, pred_y, forecasted_y, dates, fdates,
-                               label, obs_pred_r2, model, focal_loc, PopSize, 
-                               ArrivalDate]
+                output_list = [dates, obs_pred_r2, model, focal_loc]
                     
                 model_fits_df.loc[len(model_fits_df)] = output_list
                     
-                print(obs_pred_r2)
+                print(focal_loc, ' : ', model, ' : ', dates[-1], ' : ', obs_pred_r2)
                 
             except:
                 continue
@@ -207,4 +161,5 @@ for focal_loc in locations:
         print('\n')
 
 
-model_fits_df.to_pickle('data/model_results_dataframe.pkl')
+
+#model_fits_df.to_pickle('data/model_results_dataframe.pkl')
