@@ -6,7 +6,7 @@ import model_fxns as fxns
 
 
 
-model_fits_df = pd.read_csv('data/SEIR-SD_States.txt', sep='\t')
+model_fits_df = pd.read_csv('data/SEIR-SD_States_Update.txt', sep='\t')
 model_fits_df.drop(model_fits_df.columns[1], axis=1, inplace=True)
 
 df_sub = model_fits_df[model_fits_df['focal_loc'] == 'Illinois']
