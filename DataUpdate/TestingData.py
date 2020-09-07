@@ -38,10 +38,6 @@ f.close()
 
 Atlantic_df = pd.read_csv('data/Atlantic_df.csv', sep=',')
 
-#print(Atlantic_df.head())      
-#sys.exit()
-
-
 Atlantic_df.drop(['hash', 'dateChecked', 'fips', 'posNeg'], axis=1, inplace=True)
 Atlantic_df = Atlantic_df.loc[~Atlantic_df['state'].isin(exclude_abbv)]
 state_abvs = Atlantic_df['state'].tolist()
@@ -126,9 +122,9 @@ except:
 
 dates = main_df['date'].tolist()
 
-
-df_today = main_df[main_df['date'] == dates[-1]].copy()
-
+df_today = main_df[main_df['date'] == dates[-1]].copy()  #'08/27/20'
+#print(df_today.shape)
+#print(df_today['date'])
 
 df_today['log_PopSize'] = np.log10(df_today['PopSize'])
 df_today['log_People_Tested'] = np.log10(df_today['People_Tested'])
@@ -139,6 +135,14 @@ df_today['log_positive'] = np.log10(df_today['positive'])
 df_today['log_hospitalizedCurrently'] = np.log10(df_today['hospitalizedCurrently'])
 df_today['log_inIcuCurrently'] = np.log10(df_today['inIcuCurrently'])
 df_today['log_onVentilatorCurrently'] = np.log10(df_today['onVentilatorCurrently'])
+
+
+print(list(df_today))
+hrate = df_today['Hospitalization_Rate'].tolist()
+dates = df_today['date'].tolist()
+for i, val in enumerate(dates):
+    print(val, '  ', hrate[i])    
+#sys.exit()
 
 #df_today.to_excel("data/Testing_DataFrame.xlsx")
 main_df.to_pickle('data/Testing_Dataframe.pkl')
