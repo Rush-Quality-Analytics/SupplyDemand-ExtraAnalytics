@@ -1,13 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import csv # csv import functionality
-import time # library for time functionality
 import sys
-import warnings # needed for suppression of unnecessary warnings
-import base64 # functionality for encoding binary data to ASCII characters and decoding back to binary data
 import numpy as np
-import datetime 
-import sys
+#import sys
 
 from os.path import expanduser
 mydir = expanduser("~/GitHub/SupplyDemand-ExtraAnalytics/ForManuscript/")
@@ -50,13 +45,21 @@ def fig_fxn(fig, model, fits_df, locations, max_len, n, dates, clr):
             
             fits_df_loc = fits_df[fits_df['focal_loc'] == loc]
             r2s = fits_df_loc['obs_pred_r2'].tolist()
+            
+            r2s2 = []
+            for r2 in r2s:
+                if r2 > 0.0 and r2 < 1.0:
+                    r2s2.append(r2)
+                else:
+                    r2s2.append(0.0)
+                
             #print(max_len)
-            x = list(range(len(r2s)))
+            x = list(range(len(r2s2)))
             #x = max_len - (np.array(list(range(len(r2s)))) + 1)
             #x = list(np.flip(x))
             
             X.extend(x)
-            Y.extend(r2s)
+            Y.extend(r2s2)
             
             
         except:
@@ -65,9 +68,10 @@ def fig_fxn(fig, model, fits_df, locations, max_len, n, dates, clr):
     for clim in [97.5, 87.5, 67.5]:
         # 95, 75, 65 % CI intervals
         
+        print(model, len(X), len(Y), clim)
         xran, pct_low, pct_hi, pct50 = hulls(X, Y, clim)
         #print(len(dates), len(xran), len(pct_low), len(pct_hi))
-        x = np.array(xran) + (141 - len(xran))
+        x = np.array(xran)
         plt.fill_between(x, pct_low, pct_hi, facecolor= clr, alpha=0.4, lw=0.2)
         
     plt.xlabel('Days since 3/10', fontweight='bold', fontsize=10)
@@ -107,13 +111,16 @@ def fig_fxn(fig, model, fits_df, locations, max_len, n, dates, clr):
         plt.ylim(0.98, 1.0)
 
     
-    plt.xlim(0, 141)
+    #plt.xlim(0, 141)
     return fig, pct50
     
     
     
 model_fits_df = pd.read_pickle('data/model_results_dataframe.pkl')
-#print(list(model_fits_df))
+print(list(model_fits_df))
+print(list(set(model_fits_df['model'].values.tolist())))
+print(model_fits_df['pred_dates'].iloc[0].values.tolist())
+#sys.exit()
 
 # obs_y
 # pred_y
@@ -162,9 +169,6 @@ for i, model in enumerate(models):
             d = df['pred_dates'].values[-1]
             
             #print(model, loc, len(d), len(r2s))
-            
-            #d = d[6:]
-            
             if len(r2s) > max_len:
                 max_len = len(r2s)
                 dates = d
@@ -172,7 +176,6 @@ for i, model in enumerate(models):
             continue
     
     #print(max_len, len(dates))
-    
     fits_df = model_fits_df[model_fits_df['model'] == model]
     fig, avg = fig_fxn(fig, model, fits_df, locations, max_len, ns[i], dates, model_clrs[i])
     avgR2s.append(avg)
@@ -182,10 +185,14 @@ for i, model in enumerate(models):
 fig.add_subplot(3, 3, 8)
 
 for i, model in enumerate(models):
+    
+    #if model == 'SEIR-SD':
+    #    print(avgR2s[i])
+        
     #if i == 0: continue
     
     l = avgR2s[i]
-    x = np.array(list(range(len(l)))) + 7
+    x = np.array(list(range(len(l)))) + 5
     
     r2s = []
     for j in l:
@@ -198,8 +205,6 @@ for i, model in enumerate(models):
         else:
             r2s.append(0)
         
-    
-    #print(model, ' ', r2s)
     plt.plot(x, r2s, c=model_clrs[i], linewidth=2, alpha=0.6, label=model)
     
 

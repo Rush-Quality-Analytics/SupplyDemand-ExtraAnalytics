@@ -89,7 +89,7 @@ for focal_loc in locations:
         obs_y = obs_y[i:]
         
         
-        for i, j in enumerate(list(range(-170, 0))):
+        for i, j in enumerate(list(range(-200, 0))):
             
             try:
                         
@@ -162,4 +162,4 @@ for focal_loc in locations:
 
 
 
-#model_fits_df.to_pickle('data/model_results_dataframe.pkl')
+model_fits_df.to_pickle('data/model_results_dataframe.pkl')
