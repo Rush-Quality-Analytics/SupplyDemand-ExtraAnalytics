@@ -596,6 +596,7 @@ def fit_curve(obs_x, obs_y, model, ForecastDays, N, ArrivalDate, day, iterations
         obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
         
     elif model == 'SEIR-SD':
+        
         forecasted_y, forecasted_x, pred_y, params = get_seir_sd(obs_x, obs_y, ForecastDays, N, iterations, day)
         obs_pred_r2 = obs_pred_rsquare(obs_y, pred_y)
         
